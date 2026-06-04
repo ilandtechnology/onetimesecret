@@ -90,7 +90,7 @@ jobs:
           from pathlib import Path
           import yaml
 
-          src = Path('docker/compose/docker-compose.full.yml')
+          src = Path('docker-compose.yml')
           dest = Path('azure-docker-compose.yml')
           data = yaml.safe_load(src.read_text())
 
