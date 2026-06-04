@@ -24,7 +24,7 @@ env:
   ACR_SUFFIX: hnatabdhb3cad0ba
   ACR_LOGIN_SERVER: acrotsprdeus2-hnatabdhb3cad0ba.azurecr.io
   WEBAPP_NAME: app-ots-prd-eus2-01
-  BUILD_TARGETS: main caddy
+  BUILD_TARGETS: main
 
 jobs:
   deploy:
@@ -90,7 +90,7 @@ jobs:
           from pathlib import Path
           import yaml
 
-          src = Path('docker-compose.yml')
+          src = Path('docker/compose/docker-compose.simple.yml')
           dest = Path('azure-docker-compose.yml')
           data = yaml.safe_load(src.read_text())
 
@@ -103,16 +103,11 @@ jobs:
               for key in ['volumes', 'env_file', 'container_name', 'build', 'stdin_open', 'tty']:
                   service.pop(key, None)
 
-          proxy = data['services']['proxy']
-          scrub(proxy)
-          proxy['image'] = f'{registry}/onetimesecret/onetimesecret-caddy:{tag}'
-
           app = data['services']['app']
           scrub(app)
           app['image'] = f'{registry}/onetimesecret/onetimesecret:{tag}'
 
-          for service_name in ['maindb', 'rabbitmq', 'worker-email', 'scheduler']:
-              scrub(data['services'].get(service_name))
+          scrub(data['services'].get('maindb'))
 
           data.pop('volumes', None)
           data.pop('networks', None)
