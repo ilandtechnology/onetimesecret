@@ -61,7 +61,7 @@
 FROM golang:1.26-bookworm@sha256:8e8aa801e8417ef0b5c42b504dd34db3db911bb73dba933bd8bde75ed815fdbb AS builder
 
 # Build arguments
-ARG CADDY_VERSION=551f793700fe1550845c824470b623fd1aa03d36 # v2.10.2
+ARG CADDY_VERSION=v2.11.2
 ARG XCADDY_VERSION=328cac711a1fe80041c3b79db2dfbb4e10330a05 # v0.4.5
 ARG PUBLIC_DIR=/var/www/public
 

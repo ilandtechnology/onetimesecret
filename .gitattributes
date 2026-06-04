@@ -9,3 +9,4 @@
 # See CONTRIBUTING.md for details
 
 src/locales/**/*.json merge=json
+*.sh text eol=lf
