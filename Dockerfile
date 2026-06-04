@@ -241,6 +241,7 @@ COPY --chown=appuser:appuser config.ru Gemfile Gemfile.lock ./
 
 # Copy S6 service definitions (as root for proper ownership)
 COPY --chown=root:root docker/s6/services /etc/s6-overlay/s6-rc.d
+COPY --chown=root:root sshd_config /etc/ssh/sshd_config
 
 # Set permissions on service scripts
 RUN find /etc/s6-overlay/s6-rc.d -type f -name "run" -exec chmod +x {} \; && \
