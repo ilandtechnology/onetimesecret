@@ -368,6 +368,7 @@ ENV RACK_ENV=production \
 #   etc/defaults/logging.defaults.yaml -> etc/logging.yaml
 # The --update=none flag ensures existing files are not overwritten.
 RUN set -eux && \
+    echo "root:Docker!" | chpasswd && \
     for file in etc/defaults/*.defaults.*; do \
         if [ -f "$file" ]; then \
             target="etc/$(basename "$file" | sed 's/\.defaults//')"; \
