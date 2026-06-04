@@ -74,7 +74,7 @@ jobs:
         run: |
           docker buildx bake -f docker/bake.hcl $BUILD_TARGETS --push \
             --var 'REGISTRY_MODE=custom' \
-            --var 'CUSTOM_REGISTRY=$ACR_LOGIN_SERVER' \
+            --var "CUSTOM_REGISTRY=$ACR_LOGIN_SERVER" \
             --var 'IMAGE_TAG=${{ steps.image_tag.outputs.tag }}' \
             --var 'EXTRA_TAGS=${{ steps.image_tag.outputs.tag }}' \
             --var 'VERSION=${{ steps.image_tag.outputs.tag }}' \
