@@ -73,12 +73,12 @@ jobs:
       - name: Build and push app + proxy images
         run: |
           docker buildx bake -f docker/bake.hcl $BUILD_TARGETS --push \
-            --set 'REGISTRY_MODE=custom' \
-            --set 'CUSTOM_REGISTRY=$ACR_LOGIN_SERVER' \
-            --set 'IMAGE_TAG=${{ steps.image_tag.outputs.tag }}' \
-            --set 'EXTRA_TAGS=${{ steps.image_tag.outputs.tag }}' \
-            --set 'VERSION=${{ steps.image_tag.outputs.tag }}' \
-            --set 'COMMIT_HASH=${{ steps.image_tag.outputs.tag }}'
+            --var 'REGISTRY_MODE=custom' \
+            --var 'CUSTOM_REGISTRY=$ACR_LOGIN_SERVER' \
+            --var 'IMAGE_TAG=${{ steps.image_tag.outputs.tag }}' \
+            --var 'EXTRA_TAGS=${{ steps.image_tag.outputs.tag }}' \
+            --var 'VERSION=${{ steps.image_tag.outputs.tag }}' \
+            --var 'COMMIT_HASH=${{ steps.image_tag.outputs.tag }}'
 
       - name: Install PyYAML
         run: python -m pip install pyyaml
