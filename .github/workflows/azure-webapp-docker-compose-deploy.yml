@@ -20,7 +20,8 @@ permissions:
   id-token: write
 
 env:
-  ACR_NAME: acrotsprdeus2-hnatabdhb3cad0ba
+  ACR_NAME: acrotsprdeus2
+  ACR_SUFFIX: hnatabdhb3cad0ba
   ACR_LOGIN_SERVER: acrotsprdeus2-hnatabdhb3cad0ba.azurecr.io
   WEBAPP_NAME: app-ots-prd-eus2-01
   BUILD_TARGETS: main,caddy
@@ -67,7 +68,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Azure Container Registry
-        run: az acr login --name $ACR_NAME
+        run: az acr login --name $ACR_NAME --suffix $ACR_SUFFIX
 
       - name: Build and push app + proxy images
         run: |
