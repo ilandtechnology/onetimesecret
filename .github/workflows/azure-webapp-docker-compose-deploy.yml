@@ -24,7 +24,7 @@ env:
   ACR_SUFFIX: hnatabdhb3cad0ba
   ACR_LOGIN_SERVER: acrotsprdeus2-hnatabdhb3cad0ba.azurecr.io
   WEBAPP_NAME: app-ots-prd-eus2-01
-  BUILD_TARGETS: main,caddy
+  BUILD_TARGETS: main caddy
 
 jobs:
   deploy:
