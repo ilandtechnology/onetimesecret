@@ -1,9 +1,9 @@
 name: Deploy Docker Compose to Azure Web App
 
 on:
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
     inputs:
       resource_group:

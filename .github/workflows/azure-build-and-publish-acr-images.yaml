@@ -1,0 +1,269 @@
+# .github/workflows/build-and-publish-oci-images.yml
+
+name: Build and Publish to Azure Container Registry
+
+## OCI image tagging strategy:
+## Release tags (v1.0.0): v<version>
+## Release candidates (v1.0.0-rc1): v<version>
+## Branch push: <branch-name>
+## Manual dispatch: dev (or version_tag if provided)
+## Scheduled (nightly): nightly
+##
+## IMAGE_TAG carries the v-prefixed version for release builds;
+## empty for non-release builds (only EXTRA_TAGS apply).
+##
+## Architecture:
+## Uses docker/bake-action with docker/bake.hcl to build all image
+## variants in a single job. Bake resolves the dependency graph
+## (base → dependencies → build → final) automatically.
+##
+## Authentication:
+## Uses OIDC (OpenID Connect) with Azure Federated Credentials.
+## No secrets (client_secret) are stored — the GitHub Actions runner
+## exchanges a short-lived OIDC token for an Azure access token.
+##
+## Required GitHub Configuration:
+##   Secrets:
+##     AZURE_CLIENT_ID        App Registration (client) ID
+##     AZURE_TENANT_ID        Entra ID tenant ID
+##     AZURE_SUBSCRIPTION_ID  Azure subscription ID
+##   Variables:
+##     ACR_NAME               ACR resource name (e.g., "myregistry")
+##     ACR_LOGIN_SERVER        ACR login server (e.g., "myregistry.azurecr.io")
+##
+## Debug Logging (Repository Variables):
+##   ACTIONS_STEP_DEBUG=true    Enable purple debug output for all steps
+##   ACTIONS_RUNNER_DEBUG=true  Enable runner diagnostic logging
+##   Set in Settings → Secrets and variables → Actions → Variables
+##
+## Sentry Integration (Repository Secrets):
+##   SENTRY_AUTH_TOKEN   API token with project:releases and org:read scopes
+##   SENTRY_ORG          Organization slug (e.g., "onetimesecret")
+##   SENTRY_URL          Sentry instance URL (omit for sentry.io)
+##   SENTRY_PROJECTS     Space-separated project slugs (e.g., "frontend backend workers")
+##   These enable: release creation, commit association, sourcemap upload,
+##   and deploy notifications. All Sentry steps use continue-on-error so
+##   missing secrets won't fail the build.
+
+on:
+  push:
+    branches:
+      - main
+#     tags: ['v*']
+#   pull_request:
+#     types: [closed]
+#     branches: ['develop', 'feature/*', 'rel/*']
+#     paths-ignore:
+#       - '**'
+#   schedule:
+#     # Nightly build at 03:00 UTC (off-peak hours)
+#     - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      source_branch:
+        type: string
+        description: 'Branch to build from (defaults to the branch selected in the UI)'
+        required: false
+        default: ''
+      version_tag:
+        type: string
+        description: 'Version tag for the image (e.g., "0.18.0-beta.1"). Does NOT create a git tag.'
+        required: false
+        default: ''
+      debug_enabled:
+        type: boolean
+        description: 'Enable debug mode for build troubleshooting'
+        required: false
+        default: false
+      platforms:
+        type: choice
+        description: 'Target platforms'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+        options:
+          - ''
+          - 'linux/amd64,linux/arm64'
+          - 'linux/amd64'
+          - 'linux/arm64'
+
+permissions:
+  contents: read
+  id-token: write   # OIDC — obrigatório para azure/login com federated credentials
+
+env:
+  ACR_LOGIN_SERVER: ${{ vars.ACR_LOGIN_SERVER }}
+  ACR_NAME: ${{ vars.ACR_NAME }}
+  IMAGE_REPOSITORY: onetimesecret
+
+jobs:
+  build-and-publish:
+    name: Build and Publish OCI Images to ACR
+    runs-on: ubuntu-24.04
+    if: github.repository == 'onetimesecret/onetimesecret'
+
+    steps:
+      # ──────────────────────────────────────────────
+      # 1. Checkout
+      # ──────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_branch || github.ref }}
+          fetch-depth: 0   # Full history for Sentry commits & tag resolution
+
+      # ──────────────────────────────────────────────
+      # 2. Compute image metadata & tags
+      # ──────────────────────────────────────────────
+      - name: Compute image tags
+        id: meta
+        run: |
+          IMAGE_BASE="${ACR_LOGIN_SERVER}/${IMAGE_REPOSITORY}"
+          TAGS=""
+          IMAGE_TAG=""
+
+          # Release tag (v*)
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/}"
+            IMAGE_TAG="${VERSION}"
+            TAGS="${IMAGE_BASE}:${VERSION}"
+            # If stable release (no hyphen), also tag as latest
+            if [[ "${VERSION}" != *-* ]]; then
+              TAGS="${TAGS},${IMAGE_BASE}:latest"
+            fi
+
+          # Scheduled (nightly)
+          elif [[ "${GITHUB_EVENT_NAME}" == "schedule" ]]; then
+            TAGS="${IMAGE_BASE}:nightly"
+
+          # Manual dispatch
+          elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            if [[ -n "${{ inputs.version_tag }}" ]]; then
+              IMAGE_TAG="${{ inputs.version_tag }}"
+              TAGS="${IMAGE_BASE}:${{ inputs.version_tag }}"
+            else
+              TAGS="${IMAGE_BASE}:dev"
+            fi
+
+          # Branch push
+          else
+            BRANCH="${GITHUB_REF#refs/heads/}"
+            SAFE_BRANCH="${BRANCH//\//-}"
+            TAGS="${IMAGE_BASE}:${SAFE_BRANCH}"
+          fi
+
+          # Append short SHA for traceability
+          SHORT_SHA="${GITHUB_SHA::7}"
+          TAGS="${TAGS},${IMAGE_BASE}:sha-${SHORT_SHA}"
+
+          echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "### 🏷️ Image Tags" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${TAGS}" | tr ',' '\n' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # ──────────────────────────────────────────────
+      # 3. Set up QEMU (multi-arch)
+      # ──────────────────────────────────────────────
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      # ──────────────────────────────────────────────
+      # 4. Set up Docker Buildx
+      # ──────────────────────────────────────────────
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      # ──────────────────────────────────────────────
+      # 5. Azure Login via OIDC (Federated Credentials)
+      # ──────────────────────────────────────────────
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # ──────────────────────────────────────────────
+      # 6. Obtain ACR access token via az CLI
+      # ──────────────────────────────────────────────
+      - name: Get ACR access token
+        id: acr-token
+        run: |
+          TOKEN=$(az acr login --name "${ACR_NAME}" --expose-token --output tsv --query accessToken)
+          echo "::add-mask::${TOKEN}"
+          echo "token=${TOKEN}" >> "$GITHUB_OUTPUT"
+
+      # ──────────────────────────────────────────────
+      # 7. Docker Login to ACR (login-action@v3)
+      # ──────────────────────────────────────────────
+      - name: Login to Azure Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_LOGIN_SERVER }}
+          username: 00000000-0000-0000-0000-000000000000
+          password: ${{ steps.acr-token.outputs.token }}
+
+      # ──────────────────────────────────────────────
+      # 8. Docker Bake — build all image variants
+      # ──────────────────────────────────────────────
+      - name: Build and push images (Bake)
+        uses: docker/bake-action@v6
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+          EXTRA_TAGS: ${{ steps.meta.outputs.tags }}
+          REGISTRY: ${{ env.ACR_LOGIN_SERVER }}
+          PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
+        with:
+          files: docker/bake.hcl
+          push: true
+          set: |
+            *.cache-from=type=gha
+            *.cache-to=type=gha,mode=max
+            *.platform=${{ env.PLATFORMS }}
+
+      # ──────────────────────────────────────────────
+      # 9. Sentry — Create release
+      # ──────────────────────────────────────────────
+      - name: Create Sentry release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: getsentry/action-release@v3
+        continue-on-error: true
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_URL: ${{ secrets.SENTRY_URL }}
+        with:
+          environment: production
+          version: ${{ steps.meta.outputs.image_tag }}
+          projects: ${{ secrets.SENTRY_PROJECTS }}
+          set_commits: auto
+
+      # ──────────────────────────────────────────────
+      # 10. Verify pushed images
+      # ──────────────────────────────────────────────
+      - name: Verify images in ACR
+        run: |
+          echo "### ✅ Published Images" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          az acr repository show-tags \
+            --name "${ACR_NAME}" \
+            --repository "${IMAGE_REPOSITORY}" \
+            --orderby time_desc \
+            --top 10 \
+            --output table >> "$GITHUB_STEP_SUMMARY"
+
+      # ──────────────────────────────────────────────
+      # 11. Azure Logout (cleanup)
+      # ──────────────────────────────────────────────
+      - name: Azure Logout
+        if: always()
+        run: |
+          az logout
+          az cache purge
+          az account clear

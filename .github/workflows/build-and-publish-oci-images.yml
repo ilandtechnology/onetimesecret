@@ -36,18 +36,18 @@ name: Build and Publish OCI Images
 #
 
 on:
-  push:
-    tags: ['v*']
-  pull_request:
-    types: [closed]
-    branches: ['develop', 'feature/*', 'rel/*']
-    # Don't deploy on PRs from forks
-    paths-ignore:
-      - '**'
+  # push:
+  #   tags: ['v*']
+  # pull_request:
+  #   types: [closed]
+  #   branches: ['develop', 'feature/*', 'rel/*']
+  #   # Don't deploy on PRs from forks
+  #   paths-ignore:
+  #     - '**'
 
-  schedule:
-    # Nightly build at 03:00 UTC (off-peak hours)
-    - cron: '0 3 * * *'
+  # schedule:
+  #   # Nightly build at 03:00 UTC (off-peak hours)
+  #   - cron: '0 3 * * *'
 
   workflow_dispatch:
     inputs:
