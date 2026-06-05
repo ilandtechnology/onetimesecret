@@ -69,6 +69,14 @@ on:
         description: 'Version tag for the image (e.g., "0.18.0-beta.1"). Does NOT create a git tag.'
         required: false
         default: ''
+      registry_target:
+        type: choice
+        description: 'Target registry for built images'
+        required: false
+        default: 'custom'
+        options:
+          - 'custom'
+          - 'public'
       debug_enabled:
         type: boolean
         description: 'Enable debug mode for build troubleshooting'
@@ -96,7 +104,7 @@ env:
 
 jobs:
   build-and-publish:
-    name: Build and Publish OCI Images to ACR
+    name: Build and Publish Images to ACR
     runs-on: ubuntu-24.04
 
     steps:
@@ -123,7 +131,8 @@ jobs:
       - name: Get commit short SHA
         id: commit
         run: |
-          SHORT_SHA="${GITHUB_SHA::7}"
+          SHORT_SHA="${GITHUB_SHA:0:7}"
+          echo "${SHORT_SHA}" > .commit_hash.txt
           echo "short_sha=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "Short SHA: ${SHORT_SHA}"
 
@@ -269,16 +278,37 @@ jobs:
       # ──────────────────────────────────────────────
       # 11. Build and push images (Bake)
       # ──────────────────────────────────────────────
+      - name: Audit — Resolved bake configuration
+        env:
+          VERSION: ${{ steps.tags.outputs.version }}
+          IMAGE_TAG: ${{ steps.tags.outputs.image_tag }}
+          COMMIT_HASH: ${{ steps.commit.outputs.short_sha }}
+          EXTRA_TAGS: ${{ steps.tags.outputs.extra_tags }}
+          PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
+          REGISTRY_MODE: ${{ inputs.registry_target || 'public' }}
+          CUSTOM_REGISTRY: ${{ secrets.CUSTOM_REGISTRY_HOST }}
+        run: |
+          echo "::group::Bake resolved config (dry-run)"
+          docker buildx bake -f docker/bake.hcl --print ci 2>&1 || true
+          echo "::endgroup::"
+          echo "::group::package.json version in build context"
+          node -p "require('./package.json').version"
+          echo "::endgroup::"
+
+      # ──────────────────────────────────────────────
+      # 11. Build and push images (Bake)
+      # ──────────────────────────────────────────────
       - name: Build and push images (Bake)
         uses: docker/bake-action@v6
         env:
-          REGISTRY_MODE: custom
-          CUSTOM_REGISTRY: ${{ env.ACR_LOGIN_SERVER }}
           VERSION: ${{ steps.tags.outputs.version }}
           IMAGE_TAG: ${{ steps.tags.outputs.image_tag }}
           EXTRA_TAGS: ${{ steps.tags.outputs.extra_tags }}
           COMMIT_HASH: ${{ steps.commit.outputs.short_sha }}
           PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
+          REGISTRY_MODE: ${{ inputs.registry_target || 'public' }}
+          # REGISTRY_MODE: custom
+          CUSTOM_REGISTRY: ${{ env.ACR_LOGIN_SERVER }}
         with:
           files: docker/bake.hcl
           targets: ci
