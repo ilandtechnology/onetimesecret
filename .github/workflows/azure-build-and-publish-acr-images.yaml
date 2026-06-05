@@ -147,6 +147,8 @@ jobs:
             BRANCH_SLUG=$(echo "${GITHUB_REF#refs/heads/}" | sed 's|/|-|g')
             ./.github/scripts/update-version.sh "0.0.0-${BRANCH_SLUG}.${SHORT_SHA}"
           fi
+          BUILD=$(node -p "require('./package.json').version")
+          echo "BUILD=${BUILD}"
 
       # ──────────────────────────────────────────────
       # 5. Determine image tags
@@ -218,6 +220,8 @@ jobs:
       # ──────────────────────────────────────────────
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
 
       # ──────────────────────────────────────────────
       # 7. Set up Docker Buildx
@@ -225,9 +229,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          driver-opts: |
-            image=moby/buildkit:latest
-            network=host
+          platforms: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
 
       # ──────────────────────────────────────────────
       # 8. Azure Login via OIDC (Federated Credentials)
