@@ -48,16 +48,15 @@ name: Build and Publish to Azure Container Registry
 on:
   push:
     branches:
-      - main
-#     tags: ['v*']
-#   pull_request:
-#     types: [closed]
-#     branches: ['develop', 'feature/*', 'rel/*']
-#     paths-ignore:
-#       - '**'
-#   schedule:
-#     # Nightly build at 03:00 UTC (off-peak hours)
-#     - cron: '0 3 * * *'
+    tags: ['v*']
+  pull_request:
+    types: [closed]
+    branches: ['develop', 'feature/*', 'rel/*']
+    paths-ignore:
+      - '**'
+  schedule:
+    # Nightly build at 03:00 UTC (off-peak hours)
+    - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
       source_branch:
@@ -79,7 +78,7 @@ on:
         type: choice
         description: 'Target platforms'
         required: false
-        default: 'linux/amd64,linux/arm64'
+        default: 'linux/amd64'
         options:
           - ''
           - 'linux/amd64,linux/arm64'
@@ -97,7 +96,7 @@ env:
 
 jobs:
   build-and-publish:
-    name: Build and Publish OCI Images to ACR
+    name: Build and Publish to ACR
     runs-on: ubuntu-24.04
     if: github.repository == 'onetimesecret/onetimesecret'
 
