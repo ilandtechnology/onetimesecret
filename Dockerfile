@@ -241,7 +241,6 @@ COPY --chown=appuser:appuser config.ru Gemfile Gemfile.lock ./
 
 # Copy S6 service definitions (as root for proper ownership)
 COPY --chown=root:root docker/s6/services /etc/s6-overlay/s6-rc.d
-COPY --chown=root:root sshd_config /etc/ssh/sshd_config
 
 # Set permissions on service scripts
 RUN find /etc/s6-overlay/s6-rc.d -type f -name "run" -exec chmod +x {} \; && \
@@ -368,7 +367,6 @@ ENV RACK_ENV=production \
 #   etc/defaults/logging.defaults.yaml -> etc/logging.yaml
 # The --update=none flag ensures existing files are not overwritten.
 RUN set -eux && \
-    echo "root:Docker!" | chpasswd && \
     for file in etc/defaults/*.defaults.*; do \
         if [ -f "$file" ]; then \
             target="etc/$(basename "$file" | sed 's/\.defaults//')"; \
