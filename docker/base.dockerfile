@@ -60,7 +60,6 @@ RUN set -eux && \
 # Pinned to a specific version to prevent breaking changes from upstream.
 ARG YQ_VERSION=v4.52.4
 RUN set -eux && \
-    echo "root:Docker!" | chpasswd && \
     ARCH=$(dpkg --print-architecture) && \
     case "$ARCH" in \
         amd64) YQ_ARCH="amd64" ;; \
@@ -80,8 +79,6 @@ COPY --from=node \
 COPY --from=node \
     /usr/local/lib/node_modules/npm \
     /usr/local/lib/node_modules/npm
-
-COPY --chown=root:root sshd_config /etc/ssh/sshd_config
 
 # Create symlinks and install package managers
 RUN set -eux && \

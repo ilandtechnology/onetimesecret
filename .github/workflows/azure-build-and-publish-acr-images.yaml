@@ -1,6 +1,6 @@
 # .github/workflows/build-and-publish-oci-images.yml
 
-name: Build and Publish OCI Images to ACR
+name: Build and Publish Images to ACR
 
 ## OCI image tagging strategy:
 ## Release tags (v1.0.0): v<version> + latest
@@ -175,7 +175,7 @@ jobs:
           EXTRA_TAGS=""
 
           # Release tag (v1.0.0 → latest; v1.0.0-rc1 → next)
-          if [[ "$GITHUB_REF" =~ ^refs/tags/v ]]; then
+          if [[ "$GITHUB_REF" =~ ^refs/tags/v || "$GITHUB_REF" =~ ^refs/heads/main ]]; then
             TAG_NAME="${GITHUB_REF#refs/tags/}"
             if [[ "$TAG_NAME" == *"-rc"* ]]; then
               EXTRA_TAGS="next"
