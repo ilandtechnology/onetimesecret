@@ -285,7 +285,7 @@ jobs:
           set: |
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
-            *.args.VERSION=${{ steps.version.outputs.version }}
+            *.args.VERSION=${{ steps.tags.outputs.version }}
             *.args.COMMIT_HASH=${{ steps.commit.outputs.short_sha }}
           # push: true
           # set: |
