@@ -286,7 +286,7 @@ jobs:
           EXTRA_TAGS: ${{ steps.tags.outputs.extra_tags }}
           PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
           REGISTRY_MODE: ${{ inputs.registry_target || 'public' }}
-          CUSTOM_REGISTRY: ${{ secrets.CUSTOM_REGISTRY_HOST }}
+          CUSTOM_REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
         run: |
           echo "::group::Bake resolved config (dry-run)"
           docker buildx bake -f docker/bake.hcl --print ci 2>&1 || true
@@ -307,8 +307,7 @@ jobs:
           COMMIT_HASH: ${{ steps.commit.outputs.short_sha }}
           PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
           REGISTRY_MODE: ${{ inputs.registry_target || 'public' }}
-          # REGISTRY_MODE: custom
-          CUSTOM_REGISTRY: ${{ env.ACR_LOGIN_SERVER }}
+          CUSTOM_REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
         with:
           files: docker/bake.hcl
           targets: ci
@@ -318,7 +317,7 @@ jobs:
             *.cache-to=type=gha,mode=max
             *.args.VERSION=${{ steps.tags.outputs.version }}
             *.args.COMMIT_HASH=${{ steps.commit.outputs.short_sha }}
-            
+
       # ──────────────────────────────────────────────
       # 13. Audit - Verify pushed images
       # ──────────────────────────────────────────────
@@ -369,7 +368,7 @@ jobs:
         run: |
           {
             BUILD_IMAGE_TAG_VERIFIED=$(az acr repository show-tags --name "${ACR_NAME}" --suffix "${ACR_SUFFIX}" --repository "${ACR_LOGIN_SERVER}/onetimesecret" --orderby time_desc --top 1 --output tsv)
-            echo "## OCI Image Build Complete"
+            echo "## ACR Image Build Complete"
             echo ""
             echo "**Bake file:** docker/bake.hcl"
             echo "**Targets:** ci (main, s6, lite)"
