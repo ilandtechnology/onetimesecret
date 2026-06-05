@@ -48,15 +48,16 @@ name: Build and Publish to Azure Container Registry
 on:
   push:
     branches:
-    tags: ['v*']
-  pull_request:
-    types: [closed]
-    branches: ['develop', 'feature/*', 'rel/*']
-    paths-ignore:
-      - '**'
-  schedule:
-    # Nightly build at 03:00 UTC (off-peak hours)
-    - cron: '0 3 * * *'
+    # tags: ['v*']
+    - main
+  # pull_request:
+  #   types: [closed]
+  #   branches: ['develop', 'feature/*', 'rel/*']
+  #   paths-ignore:
+  #     - '**'
+  # schedule:
+  #   # Nightly build at 03:00 UTC (off-peak hours)
+  #   - cron: '0 3 * * *'
   workflow_dispatch:
     inputs:
       source_branch:
