@@ -287,6 +287,7 @@ jobs:
           PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
           REGISTRY_MODE: ${{ inputs.registry_target || 'public' }}
           CUSTOM_REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
+          CUSTOM_REPO: onetimesecret
         run: |
           echo "::group::Bake resolved config (dry-run)"
           docker buildx bake -f docker/bake.hcl --print ci 2>&1 || true
@@ -308,6 +309,7 @@ jobs:
           PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
           REGISTRY_MODE: ${{ inputs.registry_target || 'public' }}
           CUSTOM_REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
+          CUSTOM_REPO: onetimesecret
         with:
           files: docker/bake.hcl
           targets: ci

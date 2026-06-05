@@ -64,6 +64,15 @@ variable "CUSTOM_REGISTRY" {
   default = ""
 }
 
+# Repository path within the custom registry.
+# Examples:
+#   ACR:    "onetimesecret"                  → acr.azurecr.io/onetimesecret
+#   Harbor: "myteam/onetimesecret"           → harbor.example.com/myteam/onetimesecret
+#   GHCR:   "onetimesecret/onetimesecret"   → ghcr.io/onetimesecret/onetimesecret
+variable "CUSTOM_REPO" {
+  default = "onetimesecret/onetimesecret"
+}
+
 variable "PLATFORMS" {
   default = "linux/amd64"
 }
@@ -78,9 +87,9 @@ function "tags" {
   # VERSION (clean semver) → build args and OCI labels only, never used as a Docker tag
   result = (
     equal(REGISTRY_MODE, "custom") && notequal(CUSTOM_REGISTRY, "") ? concat(
-      notequal(IMAGE_TAG, "") ? ["${CUSTOM_REGISTRY}/onetimesecret/onetimesecret${suffix}:${IMAGE_TAG}"] : [],
+      notequal(IMAGE_TAG, "") ? ["${CUSTOM_REGISTRY}/${CUSTOM_REPO}${suffix}:${IMAGE_TAG}"] : [],
       [for t in compact(split(",", EXTRA_TAGS)) :
-        "${CUSTOM_REGISTRY}/onetimesecret/onetimesecret${suffix}:${trimspace(t)}"
+        "${CUSTOM_REGISTRY}/${CUSTOM_REPO}${suffix}:${trimspace(t)}"
       ]
     ) : concat(
       notequal(IMAGE_TAG, "") ? [
