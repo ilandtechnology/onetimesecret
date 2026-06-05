@@ -272,16 +272,26 @@ jobs:
       - name: Build and push images (Bake)
         uses: docker/bake-action@v6
         env:
+          VERSION: ${{ steps.tags.outputs.version }}
           REGISTRY: ${{ env.ACR_LOGIN_SERVER }}
           IMAGE_TAG: ${{ steps.tags.outputs.image_tag }}
           EXTRA_TAGS: ${{ steps.tags.outputs.extra_tags }}
+          COMMIT_HASH: ${{ steps.commit.outputs.short_sha }}
+          PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
         with:
           files: docker/bake.hcl
-          push: true
+          targets: ci
+          push: ${{ github.event_name != 'pull_request' }}
           set: |
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
-            *.platform=${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
+            *.args.VERSION=${{ steps.version.outputs.version }}
+            *.args.COMMIT_HASH=${{ steps.commit.outputs.short_sha }}
+          # push: true
+          # set: |
+          #   *.cache-from=type=gha
+          #   *.cache-to=type=gha,mode=max
+          #   *.platform=${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
 
       # ──────────────────────────────────────────────
       # 12. Sentry — Create release
