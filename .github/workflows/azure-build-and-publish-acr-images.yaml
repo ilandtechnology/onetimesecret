@@ -276,7 +276,7 @@ jobs:
           password: ${{ steps.acr-token.outputs.token }}
 
       # ──────────────────────────────────────────────
-      # 11. Build and push images (Bake)
+      # 11. Audit — Resolved bake configuration
       # ──────────────────────────────────────────────
       - name: Audit — Resolved bake configuration
         env:
@@ -296,9 +296,9 @@ jobs:
           echo "::endgroup::"
 
       # ──────────────────────────────────────────────
-      # 11. Build and push images (Bake)
+      # 12. Build and push images Bake
       # ──────────────────────────────────────────────
-      - name: Build and push images (Bake)
+      - name: Build and push images Bake
         uses: docker/bake-action@v6
         env:
           VERSION: ${{ steps.tags.outputs.version }}
@@ -318,33 +318,11 @@ jobs:
             *.cache-to=type=gha,mode=max
             *.args.VERSION=${{ steps.tags.outputs.version }}
             *.args.COMMIT_HASH=${{ steps.commit.outputs.short_sha }}
-          # push: true
-          # set: |
-          #   *.cache-from=type=gha
-          #   *.cache-to=type=gha,mode=max
-          #   *.platform=${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
-
+            
       # ──────────────────────────────────────────────
-      # 12. Sentry — Create release
+      # 13. Audit - Verify pushed images
       # ──────────────────────────────────────────────
-      - name: Create Sentry release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: getsentry/action-release@v3
-        continue-on-error: true
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_URL: ${{ secrets.SENTRY_URL }}
-        with:
-          environment: production
-          version: ${{ steps.tags.outputs.image_tag }}
-          projects: ${{ secrets.SENTRY_PROJECTS }}
-          set_commits: auto
-
-      # ──────────────────────────────────────────────
-      # 13. Verify pushed images
-      # ──────────────────────────────────────────────
-      - name: Verify images in ACR
+      - name: Audit - Verify images in ACR
         if: success()
         env:
           BUILD_VERSION: ${{ steps.tags.outputs.version }}
@@ -353,6 +331,8 @@ jobs:
           REGISTRY_MODE: ${{ inputs.registry_target || 'public' }}
           CUSTOM_REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
         run: |
+          set -euo pipefail
+
           # Determine image reference to inspect
           if [ "${REGISTRY_MODE}" = "custom" ] && [ -n "${CUSTOM_REGISTRY}" ]; then
             REGISTRY_PREFIX="${CUSTOM_REGISTRY}/onetimesecret"
@@ -375,17 +355,10 @@ jobs:
           echo "Expected: ${BUILD_VERSION}"
           echo "Actual:   ${ACTUAL_VERSION}"
           echo "::endgroup::"
-        # run: |
-        #   echo "### ✅ Published Images" >> "$GITHUB_STEP_SUMMARY"
-        #   echo "" >> "$GITHUB_STEP_SUMMARY"
-        #   az acr repository show-tags \
-        #     --name "${ACR_NAME}" \
-        #     --suffix "${ACR_SUFFIX}" \
-        #     --repository onetimesecret \
-        #     --orderby time_desc \
-        #     --top 10 \
-        #     --output table >> "$GITHUB_STEP_SUMMARY"
 
+      # ──────────────────────────────────────────────
+      # 14. Output build summary
+      # ──────────────────────────────────────────────
       - name: Output build summary
         env:
           BUILD_PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
@@ -395,6 +368,7 @@ jobs:
           BUILD_EXTRA_TAGS: ${{ steps.tags.outputs.extra_tags }}
         run: |
           {
+            BUILD_IMAGE_TAG_VERIFIED=$(az acr repository show-tags --name "${ACR_NAME}" --suffix "${ACR_SUFFIX}" --repository "${ACR_LOGIN_SERVER}/onetimesecret" --orderby time_desc --top 1 --output tsv)
             echo "## OCI Image Build Complete"
             echo ""
             echo "**Bake file:** docker/bake.hcl"
@@ -404,12 +378,13 @@ jobs:
             echo "**Image tag:** ${BUILD_IMAGE_TAG:-*(none — non-tag build)*}"
             echo "**Commit:** ${BUILD_COMMIT}"
             echo "**Extra tags:** ${BUILD_EXTRA_TAGS}"
+            echo "**Tag Published:** ${BUILD_IMAGE_TAG_VERIFIED}"
           } >> "$GITHUB_STEP_SUMMARY"
 
       # ──────────────────────────────────────────────
-      # 14. Azure Logout (cleanup)
+      # 15. Azure logout and cleanup
       # ──────────────────────────────────────────────
-      - name: Azure Logout
+      - name: Azure logout and cleanup
         if: always()
         run: |
           az logout
