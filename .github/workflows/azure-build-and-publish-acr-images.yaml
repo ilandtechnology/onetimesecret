@@ -367,9 +367,10 @@ jobs:
           BUILD_IMAGE_TAG: ${{ steps.tags.outputs.image_tag }}
           BUILD_COMMIT: ${{ steps.commit.outputs.short_sha }}
           BUILD_EXTRA_TAGS: ${{ steps.tags.outputs.extra_tags }}
+          CUSTOM_REPO: onetimesecret
         run: |
           {
-            BUILD_IMAGE_TAG_VERIFIED=$(az acr repository show-tags --name "${ACR_NAME}" --suffix "${ACR_SUFFIX}" --repository "${ACR_LOGIN_SERVER}/onetimesecret" --orderby time_desc --top 1 --output tsv)
+            BUILD_IMAGE_TAG_VERIFIED=$(az acr repository show-tags --name "${ACR_NAME}" --suffix "${ACR_SUFFIX}" --repository "${CUSTOM_REPO}" --orderby time_desc --top 1 --output tsv)
             echo "## ACR Image Build Complete"
             echo ""
             echo "**Bake file:** docker/bake.hcl"
