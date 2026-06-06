@@ -2,7 +2,7 @@
 
 name: Build and Publish Images to ACR
 
-## OCI image tagging strategy:
+## Azure Container Registry image tagging strategy:
 ## Release tags (v1.0.0): v<version> + latest
 ## Release candidates (v1.0.0-rc1): v<version> + next
 ## Branch push: <branch-name> + edge
@@ -228,7 +228,7 @@ jobs:
       # 6. Set up QEMU (multi-arch)
       # ──────────────────────────────────────────────
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
 
