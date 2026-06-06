@@ -173,6 +173,12 @@ if [ "$ONETIME_DEBUG" = "true" ] || [ "$ONETIME_DEBUG" = "1" ]; then
   fi
 fi
 
+# Start SSH daemon for Azure App Service
+if [ -f /usr/sbin/sshd ]; then
+  echo "Starting SSH daemon..."
+  /usr/sbin/sshd
+fi
+
 # Run the command configured for the docker compose service
 # in the docker-compose.yaml file, or a default if none is
 # provided. See Dockerfile for more details.
