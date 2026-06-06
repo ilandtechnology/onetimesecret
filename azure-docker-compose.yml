@@ -1,0 +1,50 @@
+## DOCKER COMPOSE - ONETIME SECRET (Azure App Service)
+## Azure App Service multi-container deployment.
+##
+## Limitations:
+##   - depends_on, healthcheck, restart, networks: IGNORED
+##   - Only ports 80/8080 are routed on the primary container
+##   - Build directives not supported (pre-built images only)
+##   - Logging driver ignored (App Service manages logs)
+##
+## Required App Settings (Azure Portal → Configuration → Application settings):
+##   WEBSITES_PORT=3000
+##   WEBSITES_ENABLE_APP_SERVICE_STORAGE=true
+##
+## Retirement notice:
+##   Docker Compose in App Service will be retired on 2027-03-31.
+##   Successor: Sidecar containers.
+##   https://azure.github.io/AppService/2025/04/01/Docker-compose-migration.html
+
+services:
+  app:
+    container_name: app
+    image: acrotsprdeus2-hnatabdhb3cad0ba.azurecr.io/onetimesecret:latest
+    environment:
+      - RACK_ENV=${RACK_ENV:-production}
+      - VALKEY_URL=${VALKEY_URL:-redis://maindb:6379/0}
+      - SECRET=${SECRET}
+    entrypoint:
+      - ./bin/entrypoint.sh
+    ports:
+      - "3000:3000"
+      - "2222:2222"
+
+  maindb:
+    container_name: maindb
+    image: acrotsprdeus2-hnatabdhb3cad0ba.azurecr.io/valkey:8.1-bookworm
+    command: >
+      valkey-server
+      --appendonly yes
+      --appendfilename onetime.aof
+      --appendfsync everysec
+      --dbfilename onetime.rdb
+      --save 157680000 1
+      --bind 0.0.0.0
+      --port 6379
+      --databases 1
+      --timeout 30
+      --loglevel notice
+      --rdbcompression yes
+    ports:
+      - "6379:6379"

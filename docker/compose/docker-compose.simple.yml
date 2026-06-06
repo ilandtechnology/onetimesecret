@@ -14,7 +14,7 @@
 
 services:
   app:
-    image: onetimesecret/onetimesecret:${OTS_IMAGE_TAG:-latest}
+    image: acrotsprdeus2-hnatabdhb3cad0ba.azurecr.io/onetimesecret:${OTS_IMAGE_TAG:-latest}
     container_name: onetime-app
     depends_on:
       maindb:
@@ -23,7 +23,7 @@ services:
       - ../../.env
     environment:
       - RACK_ENV=${RACK_ENV:-production}
-      - VALKEY_URL=redis://maindb:6379/0
+      - VALKEY_URL=${VALKEY_URL:-redis://onetime-maindb:6379/0}
       - SECRET=${SECRET}
       - SESSION_SECRET=${SESSION_SECRET:-}
       - AUTHENTICATION_MODE=${AUTHENTICATION_MODE:-simple}

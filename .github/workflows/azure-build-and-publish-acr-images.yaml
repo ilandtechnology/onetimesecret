@@ -287,7 +287,7 @@ jobs:
           PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
           REGISTRY_MODE: ${{ inputs.registry_target || 'public' }}
           CUSTOM_REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
-          CUSTOM_REPO: onetimesecret
+          CUSTOM_REPO: ${{ secrets.ACR_REPOSITORY }}
         run: |
           echo "::group::Bake resolved config (dry-run)"
           docker buildx bake -f docker/bake.hcl --print ci 2>&1 || true
@@ -309,7 +309,7 @@ jobs:
           PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
           REGISTRY_MODE: ${{ inputs.registry_target || 'public' }}
           CUSTOM_REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
-          CUSTOM_REPO: onetimesecret
+          CUSTOM_REPO: ${{ secrets.ACR_REPOSITORY }}
         with:
           files: docker/bake.hcl
           targets: ci
@@ -330,7 +330,7 @@ jobs:
           BUILD_EXTRA_TAGS: ${{ steps.tags.outputs.extra_tags }}
           REGISTRY_MODE: ${{ inputs.registry_target || 'public' }}
           CUSTOM_REGISTRY: ${{ secrets.ACR_LOGIN_SERVER }}
-          CUSTOM_REPO: onetimesecret
+          CUSTOM_REPO: ${{ secrets.ACR_REPOSITORY }}
         run: |
           set -euo pipefail
 
@@ -367,7 +367,7 @@ jobs:
           BUILD_IMAGE_TAG: ${{ steps.tags.outputs.image_tag }}
           BUILD_COMMIT: ${{ steps.commit.outputs.short_sha }}
           BUILD_EXTRA_TAGS: ${{ steps.tags.outputs.extra_tags }}
-          CUSTOM_REPO: onetimesecret
+          CUSTOM_REPO: ${{ secrets.ACR_REPOSITORY }}
         run: |
           {
             BUILD_IMAGE_TAG_VERIFIED=$(az acr repository show-tags --name "${ACR_NAME}" --suffix "${ACR_SUFFIX}" --repository "${CUSTOM_REPO}" --orderby time_desc --top 1 --output tsv)
