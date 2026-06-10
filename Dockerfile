@@ -190,7 +190,10 @@ RUN set -eux && \
         ca-certificates \
         openssh-server && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/* && \
+    echo "root:Docker!" | chpasswd && \
+    mkdir -p /etc/ssh && \
+    ssh-keygen -A
 
 # Install S6 overlay
 RUN set -eux && \
@@ -323,6 +326,7 @@ RUN set -eux && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/* && \
     echo "root:Docker!" | chpasswd && \
+    mkdir -p /etc/ssh && \
     ssh-keygen -A
 
 WORKDIR ${APP_DIR}
