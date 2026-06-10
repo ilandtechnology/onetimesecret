@@ -94,7 +94,11 @@ RUN apt-get update && apt-get install -y \
     bind9-dnsutils \
     iputils-ping \
     netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && echo "root:Docker!" | chpasswd
+
+# SSH config
+COPY --chown=root:root sshd_config /etc/ssh/sshd_config
 
 # Copy custom Caddy binary from builder (xcaddy outputs to /go/caddy by default)
 COPY --from=builder /go/caddy /usr/bin/caddy
