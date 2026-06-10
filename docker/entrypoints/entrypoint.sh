@@ -174,11 +174,11 @@ if [ "$ONETIME_DEBUG" = "true" ] || [ "$ONETIME_DEBUG" = "1" ]; then
 fi
 
 # Start SSH daemon for Azure App Service
-eval $(printenv | sed -n "s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/g' | sed '/=/s//="/' | sed 's/$/"/' >> /etc/profile)
-if [ -f /usr/sbin/sshd ]; then
-  echo "Starting SSH daemon..."
-  /usr/sbin/sshd
-fi
+# eval $(printenv | sed -n "s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/g' | sed '/=/s//="/' | sed 's/$/"/' >> /etc/profile)
+# if [ -f /usr/sbin/sshd ]; then
+#   echo "Starting SSH daemon..."
+#   /usr/sbin/sshd
+# fi
 
 # Run the command configured for the docker compose service
 # in the docker-compose.yaml file, or a default if none is
