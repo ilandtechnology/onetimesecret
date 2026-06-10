@@ -186,7 +186,8 @@ RUN set -eux && \
         curl \
         procps \
         xz-utils \
-        ca-certificates && \
+        ca-certificates \
+        openssh-server && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
@@ -242,6 +243,9 @@ COPY --chown=appuser:appuser config.ru Gemfile Gemfile.lock ./
 # Copy S6 service definitions (as root for proper ownership)
 COPY --chown=root:root docker/s6/services /etc/s6-overlay/s6-rc.d
 
+# SSH config
+COPY --chown=root:root sshd_config /etc/ssh/sshd_config
+
 # Set permissions on service scripts
 RUN find /etc/s6-overlay/s6-rc.d -type f -name "run" -exec chmod +x {} \; && \
     find /etc/s6-overlay/s6-rc.d -type f -name "finish" -exec chmod +x {} \; && \
@@ -263,6 +267,7 @@ ENV S6_BEHAVIOUR_IF_STAGE2_FAILS=2 \
 
 # Ensure config files exist
 RUN set -eux && \
+    echo "root:Docker!" | chpasswd && \
     for file in etc/defaults/*.defaults.*; do \
         if [ -f "$file" ]; then \
             target="etc/$(basename "$file" | sed 's/\.defaults//')"; \
@@ -311,7 +316,8 @@ RUN set -eux && \
         libpq5 \
         curl \
         procps \
-        ca-certificates && \
+        ca-certificates \
+        openssh-server && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
@@ -350,6 +356,9 @@ COPY --chown=appuser:appuser --from=dependencies ${APP_DIR}/bin/puma ./bin/puma
 COPY --chown=appuser:appuser --from=build ${APP_DIR}/package.json ./
 COPY --chown=appuser:appuser config.ru Gemfile Gemfile.lock ./
 
+# SSH config
+COPY --chown=root:root sshd_config /etc/ssh/sshd_config
+
 # Set production environment
 ENV RACK_ENV=production \
     ONETIME_HOME=${APP_DIR} \
@@ -367,6 +376,7 @@ ENV RACK_ENV=production \
 #   etc/defaults/logging.defaults.yaml -> etc/logging.yaml
 # The --update=none flag ensures existing files are not overwritten.
 RUN set -eux && \
+    echo "root:Docker!" | chpasswd && \
     for file in etc/defaults/*.defaults.*; do \
         if [ -f "$file" ]; then \
             target="etc/$(basename "$file" | sed 's/\.defaults//')"; \
