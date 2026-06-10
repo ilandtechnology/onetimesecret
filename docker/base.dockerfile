@@ -51,10 +51,7 @@ RUN set -eux && \
         pkg-config \
         git \
         curl \
-        python3 \
-        openssh-server && \
-    ssh-keygen -A && \
-    echo "root:Docker!" | chpasswd && \
+        python3 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
@@ -82,9 +79,6 @@ COPY --from=node \
 COPY --from=node \
     /usr/local/lib/node_modules/npm \
     /usr/local/lib/node_modules/npm
-
-# SSH config
-COPY --chown=root:root sshd_config /etc/ssh/sshd_config
 
 # Create symlinks and install package managers
 RUN set -eux && \

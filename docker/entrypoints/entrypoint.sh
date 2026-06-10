@@ -174,8 +174,6 @@ if [ "$ONETIME_DEBUG" = "true" ] || [ "$ONETIME_DEBUG" = "1" ]; then
 fi
 
 # Start SSH daemon for Azure App Service
-ssh-keygen -A && \
-echo "root:Docker!" | chpasswd && \
 eval $(printenv | sed -n "s/^\([^=]\+\)=\(.*\)$/export \1=\2/p" | sed 's/"/\\\"/g' | sed '/=/s//="/' | sed 's/$/"/' >> /etc/profile)
 if [ -f /usr/sbin/sshd ]; then
   echo "Starting SSH daemon..."
