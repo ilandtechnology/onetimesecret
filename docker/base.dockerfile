@@ -51,7 +51,8 @@ RUN set -eux && \
         pkg-config \
         git \
         curl \
-        python3 && \
+        python3 \
+        openssh-server && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/*
 
@@ -90,7 +91,9 @@ RUN set -eux && \
     ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
     node --version && npm --version && \
     npm install -g pnpm@10 && \
-    pnpm --version
+    pnpm --version && \
+    cd /etc/ssh/ && \
+    ssh-keygen -A
 
 # Create non-root user
 # IMPORTANT: UID/GID 1001 is also defined in Dockerfile (final and final-s6 stages).
