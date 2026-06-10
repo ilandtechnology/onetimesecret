@@ -321,7 +321,9 @@ RUN set -eux && \
         ca-certificates \
         openssh-server && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/* && \
+    echo "root:Docker!" | chpasswd && \
+    ssh-keygen -A
 
 WORKDIR ${APP_DIR}
 
@@ -378,8 +380,6 @@ ENV RACK_ENV=production \
 #   etc/defaults/logging.defaults.yaml -> etc/logging.yaml
 # The --update=none flag ensures existing files are not overwritten.
 RUN set -eux && \
-    ssh-keygen -A && \
-    echo "root:Docker!" | chpasswd && \
     for file in etc/defaults/*.defaults.*; do \
         if [ -f "$file" ]; then \
             target="etc/$(basename "$file" | sed 's/\.defaults//')"; \
@@ -389,7 +389,7 @@ RUN set -eux && \
     cp --preserve --update=none etc/examples/puma.example.rb etc/puma.rb && \
     chmod +x bin/entrypoint.sh bin/healthcheck.sh
 
-EXPOSE 3000
+EXPOSE 3000 2222
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
     CMD bin/healthcheck.sh
