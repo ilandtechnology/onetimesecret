@@ -87,7 +87,7 @@ COPY --chown=root:root sshd_config /etc/ssh/sshd_config
 # Create symlinks and install package managers
 RUN set -eux && \
     echo "root:Docker!" | chpasswd && \
-    ssh-keygen -A -f /etc/ssh/ssh_host && \
+    ssh-keygen -A && \
     ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
     ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
     node --version && npm --version && \
