@@ -87,13 +87,12 @@ COPY --chown=root:root sshd_config /etc/ssh/sshd_config
 # Create symlinks and install package managers
 RUN set -eux && \
     echo "root:Docker!" | chpasswd && \
+    ssh-keygen -A -f /etc/ssh/ssh_host && \
     ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
     ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx && \
     node --version && npm --version && \
     npm install -g pnpm@10 && \
-    pnpm --version && \
-    cd /etc/ssh/ && \
-    ssh-keygen -A
+    pnpm --version
 
 # Create non-root user
 # IMPORTANT: UID/GID 1001 is also defined in Dockerfile (final and final-s6 stages).
